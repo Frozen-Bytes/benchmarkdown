@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "benchmarkdown"
+dynamic = ["version"]
+authors = [
+    {name = "Frozen Bytes"},
+]
+description = "A CLI tool that generates a report form Benchomp results."
+requires-python = ">=3.10"
+dependencies = [
+    "pandas",
+    "scipy",
+]
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+
+[project.urls]
+Repository = "https://github.com/Frozen-Bytes/benchmarkdown"
+Issues = "https://github.com/Frozen-Bytes/benchmarkdown/issues"
+
+[project.scripts]
+benchmarkdown = "benchmarkdown.__main__:main"
+
+[tool.hatch.version]
+path = "src/benchmarkdown/__version__.py"
