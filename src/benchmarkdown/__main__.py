@@ -55,6 +55,32 @@ VERDICT_STR = {
 def _relative_diff(a: float, b: float) -> float:
     return (b - a) / a if not math.isclose(a, 0.0) else math.inf
 
+
+def resolve_search_path(path: Path) -> list[Path]:
+    """
+    Resolve a path into a list of JSON benchmark files.
+
+    If the given path is:
+    - A directory: returns all `.json` files in that directory (non-recursive), sorted.
+    - A file: returns a single-item list containing that file.
+    - Neither an existing file nor directory: returns an empty list.
+
+    Args:
+        path (Path): Path to a JSON file or a directory containing JSON files.
+
+    Returns:
+        list[Path]: A list of resolved JSON file paths.
+    """
+
+    if path.is_dir():
+        return sorted(path.glob("*.json"))
+
+    if path.is_file():
+        return [path]
+
+    return []
+
+
 def load_reports(files: list[Path]) -> list[AnalysisReport]:
     reports: list[AnalysisReport] = []
     for f in files:
@@ -83,19 +109,13 @@ def build_dataframe(reports: list[AnalysisReport]) -> tuple[pd.DataFrame, list[D
             continue
 
         device = r.devices[0]
-        device_index = -1
-
-        for index, d in enumerate(devices):
-            if d == device:
-                device_index = index
-
-        if device_index == -1:
-            device_index = len(devices)
-            devices.append(device)
 
         device_name_count[device.device] = device_name_count.get(device.device, 0) + 1
         if device_name_count[device.device] > 1:
             device.device = f"{device.device}_{device_name_count[device.device] - 1:02d}"
+
+        device_index = len(devices)
+        devices.append(device)
 
         for bench in r.benchmarks:
             total_runtime_sec = (
@@ -147,7 +167,7 @@ def _build_device_specs(md: MarkdownWriter, devices: list[Device]) -> None:
             [
                 d.id,
                 d.brand,
-                f"{d.cpu_cores} @ {d.cpu_freq} Hz",
+                f"{d.cpu_cores}-cores @ {d.cpu_freq} Hz",
                 d.get_mem_formatted_str(),
                 f"{d.sdk} ({d.sdk_codename})",
             ]
@@ -320,7 +340,7 @@ def build_markdown_report(df: pd.DataFrame, devices: list[Device]) -> str:
         )
 
     # Summary Table
-    md.header("🚀 Summary", 2)
+    md.header("🔎 Summary", 2)
     md.begin_table(["MacroBenchmark", "Metric", "Status"])
     mixed_count = 0
     for _, bench_df in df.groupby("benchmark_id"):
@@ -335,14 +355,14 @@ def build_markdown_report(df: pd.DataFrame, devices: list[Device]) -> str:
             has_regression = (cat_df["verdict"] == "REGRESSION").any()
             has_improvement = (cat_df["verdict"] == "IMPROVEMENT").any()
 
-            status = "Unknown"
+            status = "UNKNOWN"
             if has_regression and has_improvement:
                 mixed_count += 1
                 status = "UNSTABLE"
             elif has_regression:
-                status = "REGRESSED"
+                status = "REGRESSION"
             elif has_improvement:
-                status = "IMPROVED"
+                status = "IMPROVEMENT"
             else:
                 status = "NOT_SIGNIFICANT"
 
@@ -368,7 +388,21 @@ def build_markdown_report(df: pd.DataFrame, devices: list[Device]) -> str:
 def main() -> int:
     conf = parse_commandline_args()
 
-    reports = load_reports(conf.inputs)
+    resolved_paths: list[Path] = []
+    for input_path in conf.inputs:
+        resolved = resolve_search_path(input_path)
+        for p in resolved:
+            resolved_paths.append(p)
+
+    if not resolved_paths:
+        logger.critical("no valid benchcomp results found")
+        return 1
+
+    reports = load_reports(resolved_paths)
+    if not reports:
+        logger.critical("no valid benchcomp results found")
+        return 1
+
     df, devices = build_dataframe(reports)
     md = build_markdown_report(df, devices)
 

@@ -49,8 +49,8 @@ class Device:
 
     def get_mem_formatted_str(self) -> str:
         # bigger than 1 GB
-        if self.mem_size_mb > 1000:
-            return f"{self.mem_size_mb // 1000 } GB"
+        if self.mem_size_mb >= 1000:
+            return f"{self.mem_size_mb // 1000} GB"
         else:
             return f"{self.mem_size_mb} MB"
 
@@ -126,7 +126,7 @@ def _json_read_device(data: dict[str, Any]) -> Device:
         cpu_cores=data.get("cpuCoreCount", 0),
         cpu_freq=data.get("cpuMaxFreqHz", 0),
         cpu_locked=data.get("cpuLocked", True),
-        mem_size_mb=data.get("memTotalBytes", 0) // (10**6),
+        mem_size_mb=data.get("memTotalBytes", 0) // (1000 * 1000),
         emulated=data.get("emulated", True),
         sdk=version.get("sdk", 0),
         sdk_codename=version.get("codename", ""),
