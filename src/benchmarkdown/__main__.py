@@ -329,6 +329,9 @@ def build_markdown_report(df: pd.DataFrame, devices: list[Device]) -> str:
 
         for category, measures in CATEGORY_MEASURES.items():
             cat_df = bench_df[bench_df["metric_id"].isin(measures)]
+            if cat_df.empty:
+                continue
+
             has_regression = (cat_df["verdict"] == "REGRESSION").any()
             has_improvement = (cat_df["verdict"] == "IMPROVEMENT").any()
 
