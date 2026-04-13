@@ -15,6 +15,7 @@ class Device:
     brand: str
     device: str
     model: str
+    alias: str
     sdk: int
     sdk_codename: str
     cpu_cores: int
@@ -39,13 +40,10 @@ class Device:
         )
 
     @property
-    def id(self) -> str:
-        return f"{self.device}"
-
-    @property
     def label(self) -> str:
-        # return f"{self.id} ({self.cpu_cores}-cores / {self.get_mem_formatted_str()})"
-        return self.id
+        if self.alias:
+            return self.alias
+        return self.device
 
     def get_mem_formatted_str(self) -> str:
         # bigger than 1 GB
@@ -122,6 +120,7 @@ def _json_read_device(data: dict[str, Any]) -> Device:
     return Device(
         brand=data.get("brand", ""),
         model=data.get("model", ""),
+        alias=data.get("alias", ""),
         device=data.get("device", ""),
         cpu_cores=data.get("cpuCoreCount", 0),
         cpu_freq=data.get("cpuMaxFreqHz", 0),

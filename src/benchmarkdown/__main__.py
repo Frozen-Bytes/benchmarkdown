@@ -110,9 +110,9 @@ def build_dataframe(reports: list[AnalysisReport]) -> tuple[pd.DataFrame, list[D
 
         device = r.devices[0]
 
-        device_name_count[device.device] = device_name_count.get(device.device, 0) + 1
-        if device_name_count[device.device] > 1:
-            device.device = f"{device.device}_{device_name_count[device.device] - 1:02d}"
+        device_name_count[device.label] = device_name_count.get(device.label, 0) + 1
+        if device_name_count[device.label] > 1:
+            device.alias = f"{device.label}_{device_name_count[device.label] - 1:02d}"
 
         device_index = len(devices)
         devices.append(device)
@@ -165,7 +165,7 @@ def _build_device_specs(md: MarkdownWriter, devices: list[Device]) -> None:
     for d in devices:
         md.table_row(
             [
-                d.id,
+                d.label,
                 d.brand,
                 f"{d.cpu_cores}-cores @ {d.cpu_freq} Hz",
                 d.get_mem_formatted_str(),
@@ -355,7 +355,7 @@ def build_markdown_report(df: pd.DataFrame, devices: list[Device]) -> str:
             has_regression = (cat_df["verdict"] == "REGRESSION").any()
             has_improvement = (cat_df["verdict"] == "IMPROVEMENT").any()
 
-            status = "UNKNOWN"
+            status = "Unknown"
             if has_regression and has_improvement:
                 mixed_count += 1
                 status = "UNSTABLE"
